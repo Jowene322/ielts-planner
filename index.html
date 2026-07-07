@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>雅思7分冲刺计划 - IELTS Planner</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='24' fill='%234f46e5'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle' fill='white'%3E7%3C/text%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', 'Noto Sans SC', sans-serif; }
+    .subject-listening { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .subject-reading { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .subject-writing { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .subject-speaking { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .subject-vocabulary { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .subject-mock { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); }
+    .subject-review { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+    .task-card { transition: all 0.2s ease; }
+    .task-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    .completed-task { opacity: 0.7; }
+    .completed-task .task-title { text-decoration: line-through; }
+    .calendar-day { aspect-ratio: 1; }
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+    .confetti {
+      position: fixed; width: 10px; height: 10px; background: #f00;
+      animation: fall 3s linear forwards; z-index: 9999;
+    }
+    @keyframes fall {
+      to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+  <div id="app" class="max-w-4xl mx-auto pb-24">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+      <div class="px-4 py-4 flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">雅思7分冲刺计划</h1>
+          <p class="text-xs text-gray-500 mt-0.5">目标：8月29日 · 总分7.0</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-xs text-gray-500">距考试</div>
+            <div class="text-lg font-bold text-indigo-600" id="days-left">--</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-gray-500">积分</div>
+            <div class="text-lg font-bold text-amber-500" id="total-points">0</div>
+          </div>
+        </div>
+      </div>
+      <!-- Navigation -->
+      <nav class="flex border-b border-gray-200">
+        <button onclick="app.navigate('today')" id="nav-today" class="flex-1 py-3 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600">今日任务</button>
+        <button onclick="app.navigate('calendar')" id="nav-calendar" class="flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent">日历打卡</button>
+        <button onclick="app.navigate('dashboard')" id="nav-dashboard" class="flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent">学习数据</button>
+        <button onclick="app.navigate('plan')" id="nav-plan" class="flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent">计划概览</button>
+      </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" class="px-4 py-6">
+      <!-- Views will be rendered here -->
+    </main>
+  </div>
+
+  <script>
+    // ===================== Configuration =====================
+    const CONFIG = {
+      startDate: '2026-07-05',
+      examDate: '2026-08-29',
+      dailyMinutes: 240,
+      weekendMinutes: 300,
+      subjects: {
+        listening: { name: '听力', color: 'subject-listening', icon: '🎧' },
+        reading: { name: '阅读', color: 'subject-reading', icon: '📖' },
+        writing: { name: '写作', color: 'subject-writing', icon: '✍️' },
+        speaking: { name: '口语', color: 'subject-speaking', icon: '🗣️' },
+        vocabulary: { name: '词汇', color: 'subject-vocabulary', icon: '📝' },
+        mock: { name: '模考', color: 'subject-mock', icon: '⏰' },
+        review: { name: '复习', color: 'subject-review', icon: '🔄' }
+      },
+      slots: [
+        { time: '08:30', label: '早读热身', end: '09:00' },
+        { time: '09:00', label: '深度学习A', end: '10:30' },
+        { time: '10:45', label: '深度学习B', end: '12:00' },
+        { time: '14:00', label: '输出训练', end: '15:30' },
+        { time: '15:45', label: '口语/词汇', end: '16:30' }
+      ]
+    };
+
+    // ===================== Date Utilities =====================
+    const DateUtil = {
+      parse(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      },
+      format(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      },
+      addDays(date, days) {
+        const result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+      },
+      daysBetween(a, b) {
+        const da = typeof a === 'string' ? this.parse(a) : a;
+        const db = typeof b === 'string' ? this.parse(b) : b;
+        return Math.floor((db - da) / (1000 * 60 * 60 * 24));
+      },
+      isWeekend(dateStr) {
+        const day = this.parse(dateStr).getDay();
+        return day === 0 || day === 6;
+      },
+      today() {
+        const now = new Date();
+        return this.format(now);
+      }
+    };
+
+    // ===================== Plan Generator =====================
+    const PlanGenerator = {
+      generate() {
+        const start = DateUtil.parse(CONFIG.startDate);
+        const exam = DateUtil.parse(CONFIG.examDate);
+        const tasks = [];
+        let dayIndex = 0;
+
+        for (let d = new Date(start); d <= exam; d = DateUtil.addDays(d, 1)) {
+          const dateStr = DateUtil.format(d);
+          const week = Math.floor(dayIndex / 7) + 1;
+          const dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+          const isExamDay = dateStr === CONFIG.examDate;
+
+          if (isExamDay) {
+            tasks.push(this.createTask(dateStr, 'all', 'mock', '08:30', 30, '🎯 雅思考试日', '保持自信，发挥出最佳水平！记得带身份证/护照、准考证、铅笔、橡皮。'));
+          } else {
+            const dayTasks = this.getDayTasks(week, dayOfWeek, dayIndex, dateStr);
+            tasks.push(...dayTasks);
+          }
+          dayIndex++;
+        }
+        return tasks;
+      },
+
+      createTask(date, slotTime, subject, time, duration, title, description = '') {
+        return {
+          id: `${date}-${slotTime}-${subject}-${time.replace(/:/g, '')}`,
+          date,
+          time,
+          duration,
+          subject,
+          title,
+          description,
+          completed: false
+        };
+      },
+
+      getDayTasks(week, dayOfWeek, dayIndex, dateStr) {
+        const tasks = [];
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+        // 早读热身：每天固定
+        tasks.push(this.createTask(dateStr, 'morning', 'vocabulary', '08:30', 30,
+          this.getVocabTask(week),
+          this.getVocabDesc(week)));
+
+        if (week === 8) {
+          // 考前一周轻量复习
+          return this.getFinalWeekTasks(dateStr, week, dayOfWeek, tasks);
+        }
+
+        if (isWeekend && (week === 4 || week === 5 || week === 6 || week === 7)) {
+          // 周末模考日
+          return this.getMockDayTasks(dateStr, week, dayOfWeek, tasks);
+        }
+
+        // 平日任务
+        tasks.push(...this.getMorningTasks(dateStr, week, dayOfWeek));
+        tasks.push(...this.getAfternoonTasks(dateStr, week, dayOfWeek));
+        return tasks;
+      },
+
+      getVocabTask(week) {
+        if (week <= 2) return '《词汇真经》新词+复习';
+        if (week <= 4) return '核心2000词第二轮复习';
+        if (week <= 6) return '真题同替+错词复习';
+        return '538考点词+高频词伙';
+      },
+
+      getVocabDesc(week) {
+        if (week <= 2) return '每天2个主题，新词30个+复习前日错词。用艾宾浩斯复习表滚动记忆。';
+        if (week <= 4) return '重点复习听力场景词、阅读同义替换词、写作词伙。';
+        if (week <= 6) return '整理真题中遇到的生词和同替，建立个人词库。';
+        return '快速过538考点词和口语写作高频词伙。';
+      },
+
+      getMockDayTasks(dateStr, week, dayOfWeek, baseTasks) {
+        const cambridge = { 4: '剑13', 5: '剑14', 6: '剑16', 7: '剑17' };
+        const testNum = { 4: 'Test 1', 5: 'Test 1', 6: 'Test 1', 7: 'Test 2' }[week] || 'Test 1';
+        const book = cambridge[week] || '剑18';
+
+        baseTasks.push(this.createTask(dateStr, 'mock', 'mock', '09:00', 180,
+          `${book} ${testNum} 全科模考（纸笔流程）`,
+          `严格按考试时间：9:00-9:40听力（+10分钟誊写），9:50-10:50阅读，11:00-12:00写作。下午复盘。`));
+        baseTasks.push(this.createTask(dateStr, 'afternoon', 'listening', '14:00', 45,
+          '听力错题精听+同替整理',
+          '重听错题Section，写出原文和题干中的同义替换词。'));
+        baseTasks.push(this.createTask(dateStr, 'afternoon', 'reading', '15:00', 45,
+          '阅读错题精读+长难句分析',
+          '分析错题原因：定位错误？同替没识别？还是理解偏差？'));
+        baseTasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+          '口语Part 1快速过3个话题',
+          '用录音方式练习，控制在20-30秒/题。'));
+        return baseTasks;
+      },
+
+      getFinalWeekTasks(dateStr, week, dayOfWeek, baseTasks) {
+        const d = DateUtil.parse(dateStr).getDate();
+        if (d === 23) {
+          baseTasks.push(this.createTask(dateStr, 'mock', 'mock', '09:00', 180,
+            '剑18 Test 1 最后1次全科模考',
+            '保持考试手感，重点不是分数而是节奏和状态。'));
+          baseTasks.push(this.createTask(dateStr, 'afternoon', 'review', '14:00', 60, '模考错题复盘', '只看错题，不看新题。'));
+        } else if (d >= 24 && d <= 26) {
+          baseTasks.push(this.createTask(dateStr, 'morning', 'listening', '09:00', 45, '听力错题+同替回顾', '重听之前标记的难题，强化场景词。'));
+          baseTasks.push(this.createTask(dateStr, 'morning', 'reading', '10:00', 45, '阅读538考点词+错题', '保持定位敏感度，不做新长篇。'));
+          baseTasks.push(this.createTask(dateStr, 'afternoon', 'writing', '14:00', 45, '写作模板+词伙背诵', '默写个人专属开头、结尾、过渡句。'));
+          baseTasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30, '口语当季题库快速过', 'Part 1过3个话题，Part 2看2个卡片思路。'));
+        } else if (d === 27) {
+          baseTasks.push(this.createTask(dateStr, 'morning', 'review', '09:00', 60, '考前准备：证件/文具/考点确认', '身份证、准考证、2B铅笔、橡皮、耳机电池（如适用）。确认交通和考点。'));
+          baseTasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '14:00', 30, '口语Part 1热身', '保持开口感觉，不做难题。'));
+          baseTasks.push(this.createTask(dateStr, 'evening', 'vocabulary', '15:45', 20, '早睡准备', '22:30前入睡，不要熬夜。'));
+        } else if (d === 28) {
+          baseTasks.push(this.createTask(dateStr, 'morning', 'speaking', '09:00', 30, '口语Part 1热身', '简单话题保持流利度。'));
+          baseTasks.push(this.createTask(dateStr, 'morning', 'writing', '09:45', 30, '写作模板默写', '强化个人模板，避免考试卡壳。'));
+          baseTasks.push(this.createTask(dateStr, 'afternoon', 'review', '14:00', 30, '轻松复习+整理心态', '不做新题，听听英文播客或看看之前整理的高频词伙。'));
+          baseTasks.push(this.createTask(dateStr, 'evening', 'vocabulary', '15:45', 15, '早睡', '21:30前上床，保证8小时睡眠。'));
+        }
+        return baseTasks;
+      },
+
+      getMorningTasks(dateStr, week, dayOfWeek) {
+        const tasks = [];
+        const dayOfWeekMod = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+        if (week === 1) {
+          // 第1周：方法论输入
+          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+            '何琼听力技巧课（每天1节）+ 王陆语料库听写',
+            'B站搜索“何琼听力”，学习题型技巧；语料库重点第3/4/5章。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+            '刘洪波平行阅读法/538考点词',
+            'B站“刘洪波 阅读真经”，理解定位与同替逻辑。'));
+        } else if (week === 2) {
+          if (dayOfWeekMod % 2 === 1) {
+            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+              `剑7 Test ${Math.ceil(dayOfWeekMod/2)} 听力完整套题 + 错题精听`,
+              '限时30分钟完成，再用30分钟精听错题Section，最后30分钟整理同替。'));
+            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+              `剑9 Test ${Math.ceil(dayOfWeekMod/2)} 阅读完整套题`,
+              '限时60分钟，重点攻克T/F/NG和Heading题。'));
+          } else {
+            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+              '听力精听：剑5/剑6 Section 3/4 + 王陆语料库',
+              '逐句听写，标记连读、弱读、同替。'));
+            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+              '阅读题型专项：T/F/NG + Heading + Matching',
+              '总结每种题型的解题步骤和常见陷阱。'));
+          }
+        } else if (week === 3) {
+          const testNum = Math.ceil(dayOfWeekMod / 1.5);
+          if (testNum <= 4) {
+            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+              `剑11 Test ${testNum} 听力限时模考 + 精听`,
+              '严格30分钟完成，Section 3/4重点精听。'));
+            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+              `剑11 Test ${testNum} 阅读限时模考`,
+              '限时60分钟，训练定位+同替速度。'));
+          } else {
+            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+              '听力错题分类复盘 + 地图题/多选题专项',
+              '统计本周错题题型，集中突破。'));
+            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+              '阅读长难句精读 + 段落结构分析',
+              '每篇文章精读2个长难句，理解主谓宾和修饰关系。'));
+          }
+        } else if (week === 5) {
+          const testNum = Math.min(Math.ceil(dayOfWeekMod / 1.2), 4);
+          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+            `剑14 Test ${testNum} 听力限时 + 错题整理`,
+            '保持做题节奏，整理高频场景词（租房、学术、旅游）。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+            `剑14 Test ${testNum} 阅读限时 + 精读`,
+            '限时60分钟，每篇做完后精读2个长难句。'));
+        } else if (week === 6 || week === 7) {
+          // 第6、7周平日：保持手感+查漏补缺
+          const books = { 6: '剑16', 7: '剑17' };
+          const testNum = Math.min(dayOfWeekMod, 4);
+          if (dayOfWeekMod <= 4) {
+            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+              `${books[week]} Test ${testNum} 听力限时模考`,
+              '控制时间，模拟真实考试状态。'));
+            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+              `${books[week]} Test ${testNum} 阅读限时模考`,
+              '限时60分钟，做完后立即复盘错题。'));
+          } else {
+            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+              '听力错题同替回顾 + 语料库错词',
+              '不再做新题，重点回顾错题和易错词。'));
+            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+              '阅读538考点词 + 错题复盘',
+              '复习高频考点词，保持阅读敏感度。'));
+          }
+        } else {
+          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
+            '听力完整套题 / 精听 / 语料库',
+            '根据当天状态选择：做题或精听。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
+            '阅读完整套题 / 精读',
+            '限时训练或精读分析。'));
+        }
+        return tasks;
+      },
+
+      getAfternoonTasks(dateStr, week, dayOfWeek) {
+        const tasks = [];
+        const dayOfWeekMod = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+        if (week === 1) {
+          if (dayOfWeekMod % 2 === 1) {
+            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+              'Simon Task 2 结构课 + 观点类作文练习',
+              'B站“Simon 雅思写作”，学习四段式结构；写一篇观点类Task 2（不限时）。'));
+          } else {
+            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+              'Simon Task 2 讨论类作文练习',
+              '学习平衡式结构，写一篇讨论类Task 2（不限时）。'));
+          }
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+            '口语Part 1/2题库整理 + 录音5分钟',
+            '整理当季题库，用“五点法”准备Part 2话题。'));
+        } else if (week === 2) {
+          if (dayOfWeekMod <= 3) {
+            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+              'Simon Task 1 图表课 + 图表作文1篇',
+              '学习线图/柱状图/饼图/表格描述方法，注意趋势和比较。'));
+          } else {
+            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+              'Task 2 限时40分钟 + AI/工具批改',
+              '用Grammarly或AI检查语法错误，积累个人易错点。'));
+          }
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+            `Part 2 卡片准备（累计${20 + dayOfWeekMod * 3}个）`,
+            '每个卡片准备1分钟说满2分钟的内容，录音回听。'));
+        } else if (week === 3) {
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+            'Task 2 限时40分钟 + Task 1 限时20分钟',
+            '严格计时，模拟考试压力；写完后自我批改。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+            'Part 2 + Part 3 模拟录音',
+            '每两天完成1次完整Part 2+3模拟，回听纠正语法错误。'));
+        } else if (week === 4) {
+          const focus = ['多选+配对', '地图题', 'Heading+Matching', '长难句'][dayOfWeekMod % 4];
+          if (dayOfWeekMod <= 4) {
+            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+              'Simon高分范文仿写3篇（本周内完成）',
+              '选择教育/科技/环境话题范文，模仿结构和词伙。'));
+          } else {
+            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+              '写作Task 2限时 + 词伙背诵',
+              '背诵10组高频词伙，并在作文中强制使用。'));
+          }
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+            '跟读杨帅99句 + Part 3思路训练',
+            '纠正发音和连读；Part 3每天5题，练习观点+例子+反方。'));
+        } else if (week === 5) {
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+            '写作Task 1/2限时训练 + 范文分析',
+            '本周完成2篇Task 1 + 3篇Task 2；找批改或AI精改。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+            '口语完整模拟 / Part 1快速过',
+            '每2天完成1次完整口语模拟（Part1+2+3）。'));
+        } else if (week === 6 || week === 7) {
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+            '写作限时训练 + 个人模板整理',
+            '限时完成Task 2；整理个人专属开头、结尾、过渡句。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+            '口语当季题库全部过一遍',
+            '重点练最近2季新题，每天1次完整模拟。'));
+        } else {
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
+            '写作练习/网课学习',
+            '根据当天计划完成写作任务。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
+            '口语练习',
+            '录音模拟或跟读练习。'));
+        }
+        return tasks;
+      }
+    };
+
+    // ===================== Storage Manager =====================
+    const Storage = {
+      KEY: 'ielts_planner_state_v1',
+
+      load() {
+        try {
+          const raw = localStorage.getItem(this.KEY);
+          if (raw) return JSON.parse(raw);
+        } catch (e) {
+          console.error('Load failed:', e);
+        }
+        return null;
+      },
+
+      save(state) {
+        try {
+          localStorage.setItem(this.KEY, JSON.stringify(state));
+        } catch (e) {
+          console.error('Save failed:', e);
+        }
+      },
+
+      clear() {
+        localStorage.removeItem(this.KEY);
+      }
+    };
+
+    // ===================== State Manager =====================
+    const State = {
+      data: null,
+
+      init() {
+        const saved = Storage.load();
+        if (saved && saved.tasks && saved.tasks.length > 0) {
+          this.data = saved;
+          this.ensureScheduleIntegrity();
+        } else {
+          this.data = this.createInitialState();
+          this.save();
+        }
+      },
+
+      createInitialState() {
+        const tasks = PlanGenerator.generate();
+        return {
+          tasks,
+          checkIns: {},
+          streak: { current: 0, longest: 0 },
+          totalPoints: 0,
+          lastVisit: DateUtil.today(),
+          version: 1
+        };
+      },
+
+      save() {
+        Storage.save(this.data);
+      },
+
+      reset() {
+        this.data = this.createInitialState();
+        this.save();
+      },
+
+      getTasksByDate(date) {
+        return this.data.tasks.filter(t => t.date === date).sort((a, b) => a.time.localeCompare(b.time));
+      },
+
+      getTask(id) {
+        return this.data.tasks.find(t => t.id === id);
+      },
+
+      toggleTask(id) {
+        const task = this.getTask(id);
+        if (task) {
+          task.completed = !task.completed;
+          this.save();
+        }
+        return task;
+      },
+
+      getCheckIn(date) {
+        return this.data.checkIns[date] || { checkedIn: false, pointsEarned: 0, allCompleted: false };
+      },
+
+      checkIn(date) {
+        const tasks = this.getTasksByDate(date);
+        if (tasks.length === 0) return null;
+
+        const allCompleted = tasks.every(t => t.completed);
+        let points = tasks.filter(t => t.completed).reduce((sum, t) => sum + Math.max(1, Math.floor(t.duration / 10)), 0);
+        if (allCompleted) points += 20;
+
+        // streak logic
+        const prevDate = DateUtil.format(DateUtil.addDays(DateUtil.parse(date), -1));
+        const prevCheckIn = this.data.checkIns[prevDate];
+        let newStreak = 1;
+        if (prevCheckIn && prevCheckIn.checkedIn) {
+          newStreak = (this.data.streak.current || 0) + 1;
+        }
+        this.data.streak.current = newStreak;
+        if (newStreak > this.data.streak.longest) {
+          this.data.streak.longest = newStreak;
+        }
+
+        // streak bonus
+        if (newStreak >= 7) points += 100;
+        else if (newStreak >= 3) points += 30;
+
+        this.data.checkIns[date] = { checkedIn: true, pointsEarned: points, allCompleted, streakAtCheckIn: newStreak };
+        this.data.totalPoints += points;
+        this.save();
+        return { points, allCompleted, streak: newStreak };
+      },
+
+      detectMissedDays() {
+        const today = DateUtil.today();
+        const missed = [];
+        for (let d = new Date(DateUtil.parse(CONFIG.startDate)); DateUtil.format(d) < today; d = DateUtil.addDays(d, 1)) {
+          const ds = DateUtil.format(d);
+          const tasks = this.getTasksByDate(ds);
+          if (tasks.length > 0) {
+            const checkIn = this.data.checkIns[ds];
+            if (!checkIn || !checkIn.checkedIn) {
+              missed.push(ds);
+            }
+          }
+        }
+        return missed;
+      },
+
+      ensureScheduleIntegrity() {
+        // Check if tasks cover full date range
+        const existingDates = new Set(this.data.tasks.map(t => t.date));
+        const allDates = [];
+        for (let d = new Date(DateUtil.parse(CONFIG.startDate)); d <= DateUtil.parse(CONFIG.examDate); d = DateUtil.addDays(d, 1)) {
+          allDates.push(DateUtil.format(d));
+        }
+        const missingDates = allDates.filter(date => !existingDates.has(date));
+        if (missingDates.length > 0) {
+          const fresh = PlanGenerator.generate();
+          const freshByDate = {};
+          fresh.forEach(t => { freshByDate[t.date] = freshByDate[t.date] || []; freshByDate[t.date].push(t); });
+          missingDates.forEach(date => {
+            this.data.tasks.push(...(freshByDate[date] || []));
+          });
+          this.save();
+        }
+      }
+    };
+
+    // ===================== Rescheduler =====================
+    const Rescheduler = {
+      reschedule(fromDate) {
+        const missedDays = State.detectMissedDays();
+        if (missedDays.length === 0) {
+          return { rescheduled: false, reason: 'no_missed_days', backlogTotal: 0, backlogAssigned: 0, warning: false };
+        }
+
+        // Collect backlog tasks from missed days (only incomplete ones)
+        const backlog = [];
+        missedDays.forEach(date => {
+          State.getTasksByDate(date).forEach(t => {
+            if (!t.completed) {
+              backlog.push({ ...t });
+            }
+          });
+        });
+
+        if (backlog.length === 0) {
+          return { rescheduled: false, reason: 'no_backlog', backlogTotal: 0, backlogAssigned: 0, warning: false };
+        }
+
+        // Sort backlog by priority: listening > reading > writing > speaking > vocabulary > mock > review
+        const priority = ['listening', 'reading', 'writing', 'speaking', 'vocabulary', 'mock', 'review'];
+        backlog.sort((a, b) => {
+          const pa = priority.indexOf(a.subject);
+          const pb = priority.indexOf(b.subject);
+          if (pa !== pb) return pa - pb;
+          return a.date.localeCompare(b.date);
+        });
+
+        // Try to fit backlog tasks into remaining capacity of each future day
+        let backlogIndex = 0;
+        const exam = DateUtil.parse(CONFIG.examDate);
+        for (let d = DateUtil.parse(fromDate); d < exam; d = DateUtil.addDays(d, 1)) {
+          const ds = DateUtil.format(d);
+          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+          let capacity = isWeekend ? CONFIG.weekendMinutes : CONFIG.dailyMinutes;
+          // Reduce capacity in final 3 days
+          if (DateUtil.daysBetween(ds, CONFIG.examDate) <= 3) capacity = Math.min(capacity, 120);
+
+          const existingTasks = State.data.tasks.filter(t => t.date === ds);
+          const usedMinutes = existingTasks.reduce((sum, t) => sum + (t.duration || 30), 0);
+          let remaining = Math.max(0, capacity - usedMinutes);
+
+          while (remaining > 0 && backlogIndex < backlog.length) {
+            const task = backlog[backlogIndex];
+            const dur = task.duration || 30;
+            if (dur <= remaining) {
+              State.data.tasks.push({
+                ...task,
+                date: ds,
+                title: task.title + '（补）',
+                id: `${ds}-makeup-${task.subject}-${Date.now()}-${backlogIndex}`
+              });
+              remaining -= dur;
+              backlogIndex++;
+            } else {
+              State.data.tasks.push({
+                ...task,
+                duration: remaining,
+                date: ds,
+                title: task.title + '（补·续）',
+                id: `${ds}-makeup-${task.subject}-${Date.now()}-${backlogIndex}`
+              });
+              task.duration -= remaining;
+              remaining = 0;
+            }
+          }
+        }
+
+        State.save();
+
+        return {
+          rescheduled: true,
+          backlogTotal: backlog.length,
+          backlogAssigned: backlogIndex,
+          warning: backlogIndex < backlog.length
+        };
+      }
+    };
+
+    // ===================== Views =====================
+    const Views = {
+      today() {
+        const today = DateUtil.today();
+        const tasks = State.getTasksByDate(today);
+        const checkIn = State.getCheckIn(today);
+        const allDone = tasks.length > 0 && tasks.every(t => t.completed);
+
+        let html = `
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="text-2xl font-bold text-gray-900">${today}</h2>
+              <span class="text-sm px-3 py-1 rounded-full ${allDone ? 'bg-green-100 text-green-700' : 'bg-indigo-100 text-indigo-700'}">
+                ${tasks.filter(t => t.completed).length}/${tasks.length} 完成
+              </span>
+            </div>
+            <p class="text-sm text-gray-600">上午是大脑β波活跃期，优先完成听力和阅读等高认知任务。</p>
+          </div>
+        `;
+
+        if (tasks.length === 0) {
+          html += `<div class="bg-white rounded-2xl p-8 text-center shadow-sm"><div class="text-4xl mb-3">🎉</div><h3 class="text-lg font-bold">考试日或休息日</h3><p class="text-gray-500 mt-2">好好放松，保持状态！</p></div>`;
+        } else {
+          html += `<div class="space-y-3">`;
+          tasks.forEach(task => {
+            const subject = CONFIG.subjects[task.subject] || { name: task.subject, color: 'bg-gray-200', icon: '📌' };
+            html += `
+              <div class="task-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 ${task.completed ? 'completed-task' : ''}" onclick="app.toggleTask('${task.id}')">
+                <div class="flex items-start gap-3">
+                  <div class="mt-0.5">
+                    <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${task.completed ? 'bg-green-500 border-green-500' : 'border-gray-300'}">
+                      ${task.completed ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-xs font-bold px-2 py-0.5 rounded text-white ${subject.color}">${subject.name}</span>
+                      <span class="text-xs text-gray-500">${task.time} · ${task.duration}分钟</span>
+                    </div>
+                    <h3 class="task-title font-semibold text-gray-900 text-base">${subject.icon} ${task.title}</h3>
+                    ${task.description ? `<p class="text-sm text-gray-600 mt-1 leading-relaxed">${task.description}</p>` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+
+          if (checkIn.checkedIn) {
+            html += `
+              <div class="mt-6 bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                <div class="text-2xl mb-1">✅</div>
+                <h3 class="font-bold text-green-800">今日已打卡</h3>
+                <p class="text-sm text-green-700">获得 ${checkIn.pointsEarned} 积分 · 连续 ${checkIn.streakAtCheckIn || 1} 天</p>
+              </div>
+            `;
+          } else if (allDone) {
+            html += `
+              <div class="mt-6 text-center">
+                <button onclick="app.checkIn()" class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+                  🎉 完成今日打卡
+                </button>
+                <p class="text-xs text-gray-500 mt-2">全部任务完成后打卡可获得额外积分</p>
+              </div>
+            `;
+          } else {
+            html += `
+              <div class="mt-6 text-center">
+                <button disabled class="bg-gray-200 text-gray-400 font-bold py-3 px-8 rounded-full cursor-not-allowed">
+                  完成全部任务后打卡
+                </button>
+              </div>
+            `;
+          }
+        }
+
+        return html;
+      },
+
+      calendar() {
+        const start = DateUtil.parse(CONFIG.startDate);
+        const exam = DateUtil.parse(CONFIG.examDate);
+        const today = DateUtil.today();
+
+        // Build weeks
+        const weeks = [];
+        let currentWeek = [];
+        const firstDayOfWeek = start.getDay();
+        for (let i = 0; i < firstDayOfWeek; i++) currentWeek.push(null);
+
+        for (let d = new Date(start); d <= exam; d = DateUtil.addDays(d, 1)) {
+          currentWeek.push(DateUtil.format(d));
+          if (currentWeek.length === 7) {
+            weeks.push(currentWeek);
+            currentWeek = [];
+          }
+        }
+        if (currentWeek.length > 0) {
+          while (currentWeek.length < 7) currentWeek.push(null);
+          weeks.push(currentWeek);
+        }
+
+        let html = `
+          <div class="mb-4">
+            <h2 class="text-xl font-bold text-gray-900">打卡日历</h2>
+            <p class="text-sm text-gray-600">颜色越深表示当天完成率越高。点击日期可查看详情。</p>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div class="grid grid-cols-7 gap-1 mb-2 text-center">
+              <div class="text-xs font-medium text-gray-400">日</div>
+              <div class="text-xs font-medium text-gray-400">一</div>
+              <div class="text-xs font-medium text-gray-400">二</div>
+              <div class="text-xs font-medium text-gray-400">三</div>
+              <div class="text-xs font-medium text-gray-400">四</div>
+              <div class="text-xs font-medium text-gray-400">五</div>
+              <div class="text-xs font-medium text-gray-400">六</div>
+            </div>
+        `;
+
+        weeks.forEach(week => {
+          html += `<div class="grid grid-cols-7 gap-1">`;
+          week.forEach(date => {
+            if (!date) {
+              html += `<div class="calendar-day rounded-lg"></div>`;
+            } else {
+              const tasks = State.getTasksByDate(date);
+              const checkIn = State.getCheckIn(date);
+              const completed = tasks.filter(t => t.completed).length;
+              const total = tasks.length;
+              const rate = total > 0 ? completed / total : 0;
+              const isToday = date === today;
+              const isExam = date === CONFIG.examDate;
+
+              let bgClass = 'bg-gray-100';
+              let textClass = 'text-gray-400';
+              if (checkIn.checkedIn) {
+                if (rate >= 1) { bgClass = 'bg-green-500'; textClass = 'text-white'; }
+                else if (rate >= 0.6) { bgClass = 'bg-green-300'; textClass = 'text-green-900'; }
+                else { bgClass = 'bg-green-100'; textClass = 'text-green-800'; }
+              } else if (tasks.length > 0) {
+                if (date < today) { bgClass = 'bg-red-100'; textClass = 'text-red-700'; }
+                else { bgClass = 'bg-blue-50'; textClass = 'text-blue-700'; }
+              }
+              if (isExam) { bgClass = 'bg-purple-500'; textClass = 'text-white'; }
+
+              html += `
+                <div onclick="app.showDayDetail('${date}')" class="calendar-day rounded-lg ${bgClass} ${textClass} flex flex-col items-center justify-center cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all ${isToday ? 'ring-2 ring-indigo-600' : ''}">
+                  <span class="text-xs font-semibold">${date.slice(8)}</span>
+                  ${tasks.length > 0 ? `<span class="text-[10px] mt-0.5">${completed}/${total}</span>` : '<span class="text-[10px]">休</span>'}
+                </div>
+              `;
+            }
+          });
+          html += `</div>`;
+        });
+
+        html += `</div>`;
+
+        // Legend
+        html += `
+          <div class="mt-4 flex flex-wrap gap-3 text-xs text-gray-600">
+            <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div> 全完成</div>
+            <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-300"></div> 大部分完成</div>
+            <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-red-100"></div> 缺勤</div>
+            <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-blue-50"></div> 未来</div>
+            <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-purple-500"></div> 考试日</div>
+          </div>
+        `;
+
+        return html;
+      },
+
+      dashboard() {
+        const today = DateUtil.today();
+        const totalTasks = State.data.tasks.length;
+        const completedTasks = State.data.tasks.filter(t => t.completed).length;
+        const overallRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        const daysLeft = DateUtil.daysBetween(today, CONFIG.examDate);
+
+        // Subject stats
+        const subjectStats = {};
+        Object.keys(CONFIG.subjects).forEach(k => subjectStats[k] = { minutes: 0, completed: 0, total: 0 });
+        State.data.tasks.forEach(t => {
+          if (subjectStats[t.subject]) {
+            subjectStats[t.subject].minutes += t.duration;
+            subjectStats[t.subject].total += 1;
+            if (t.completed) subjectStats[t.subject].completed += 1;
+          }
+        });
+
+        // Recent 7 days check-ins
+        const recentDays = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = DateUtil.format(DateUtil.addDays(DateUtil.parse(today), -i));
+          recentDays.push({ date: d, checkedIn: State.getCheckIn(d).checkedIn });
+        }
+
+        let html = `
+          <div class="mb-6">
+            <h2 class="text-xl font-bold text-gray-900">学习数据</h2>
+            <p class="text-sm text-gray-600">用数据驱动备考，及时调整策略。</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+              <div class="text-3xl font-bold text-indigo-600">${daysLeft}</div>
+              <div class="text-xs text-gray-500 mt-1">距考试天数</div>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+              <div class="text-3xl font-bold text-amber-500">${State.data.totalPoints}</div>
+              <div class="text-xs text-gray-500 mt-1">总积分</div>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+              <div class="text-3xl font-bold text-rose-500">${State.data.streak.current}</div>
+              <div class="text-xs text-gray-500 mt-1">连续打卡</div>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center">
+              <div class="text-3xl font-bold text-green-600">${overallRate}%</div>
+              <div class="text-xs text-gray-500 mt-1">总完成率</div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+            <h3 class="font-bold text-gray-900 mb-3">近7天打卡</h3>
+            <div class="flex justify-between">
+              ${recentDays.map(d => `
+                <div class="flex flex-col items-center">
+                  <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm ${d.checkedIn ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}">
+                    ${d.checkedIn ? '✓' : '·'}
+                  </div>
+                  <span class="text-[10px] text-gray-500 mt-1">${d.date.slice(5)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+            <h3 class="font-bold text-gray-900 mb-3">各科投入</h3>
+            <div class="space-y-3">
+              ${Object.entries(subjectStats).filter(([k, v]) => v.total > 0).map(([key, stat]) => {
+                const subject = CONFIG.subjects[key];
+                const rate = Math.round((stat.completed / stat.total) * 100);
+                return `
+                  <div>
+                    <div class="flex justify-between text-sm mb-1">
+                      <span class="font-medium">${subject.icon} ${subject.name}</span>
+                      <span class="text-gray-500">${Math.round(stat.minutes / 60 * 10) / 10}h · ${rate}%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                      <div class="${subject.color} h-2 rounded-full" style="width: ${rate}%"></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
+            <h3 class="font-bold text-gray-900 mb-3">工具</h3>
+            <div class="space-y-2">
+              <button onclick="app.reschedule()" class="w-full py-2 px-4 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors text-left">
+                🔄 重新安排后续计划（缺勤后使用）
+              </button>
+              <button onclick="app.resetData()" class="w-full py-2 px-4 bg-red-50 text-red-700 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors text-left">
+                ⚠️ 重置所有数据（谨慎使用）
+              </button>
+            </div>
+          </div>
+        `;
+
+        return html;
+      },
+
+      plan() {
+        return `
+          <div class="mb-6">
+            <h2 class="text-xl font-bold text-gray-900">8周备考计划概览</h2>
+            <p class="text-sm text-gray-600">按阶段推进，听力和阅读冲高分拉总分。</p>
+          </div>
+
+          <div class="space-y-4">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <h3 class="font-bold text-indigo-700 mb-2">🧠 脑波时间分配</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li><strong>08:30-09:00</strong>：θ→α波过渡，适合口语跟读+词汇记忆</li>
+                <li><strong>09:00-12:00</strong>：β波峰值，安排听力/阅读高难度输入任务</li>
+                <li><strong>14:00-16:30</strong>：α波为主，安排写作/口语输出训练</li>
+                <li><strong>晚间</strong>：仅轻量复习，避免新内容</li>
+              </ul>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <h3 class="font-bold text-indigo-700 mb-2">📅 阶段重点</h3>
+              <ul class="text-sm text-gray-600 space-y-2">
+                <li><strong>第1周（7/5-7/11）</strong>：诊断+方法论输入。何琼听力、刘洪波阅读、Simon写作。</li>
+                <li><strong>第2周（7/12-7/18）</strong>：基础巩固+题型突破。隔天听力套题，阅读T/F/NG和Heading。</li>
+                <li><strong>第3周（7/19-7/25）</strong>：提速+限时训练。剑11-12完整套题限时。</li>
+                <li><strong>第4周（7/26-8/1）</strong>：弱项诊断+专项突破。剑13模考，针对弱项集中训练。</li>
+                <li><strong>第5周（8/2-8/8）</strong>：套题强化+技巧融合。剑14-15，写作每周2篇Task1+3篇Task2。</li>
+                <li><strong>第6周（8/9-8/15）</strong>：全真模拟+节奏稳定。剑16模考2次，调整生物钟。</li>
+                <li><strong>第7周（8/16-8/22）</strong>：冲刺+查漏补缺。剑17-18模考，错题复盘。</li>
+                <li><strong>第8周（8/23-8/28）</strong>：考前调整。轻量复习，准备证件，调整作息。</li>
+              </ul>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <h3 class="font-bold text-indigo-700 mb-2">📺 B站推荐课程</h3>
+              <div class="grid grid-cols-1 gap-3 text-sm">
+                <div class="p-3 bg-purple-50 rounded-lg"><strong>听力</strong>：何琼听力技巧课、王陆语料库</div>
+                <div class="p-3 bg-pink-50 rounded-lg"><strong>阅读</strong>：刘洪波《雅思真经第一课》、538考点词</div>
+                <div class="p-3 bg-blue-50 rounded-lg"><strong>写作</strong>：Simon写作课、顾家北ABC写作法</div>
+                <div class="p-3 bg-green-50 rounded-lg"><strong>口语</strong>：杨帅99句、Keith雅思口语</div>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      dayDetail(date) {
+        const tasks = State.getTasksByDate(date);
+        const checkIn = State.getCheckIn(date);
+        const isToday = date === DateUtil.today();
+
+        let html = `
+          <div class="mb-4">
+            <button onclick="app.navigate('calendar')" class="text-sm text-indigo-600 font-medium mb-2">← 返回日历</button>
+            <h2 class="text-xl font-bold text-gray-900">${date} 任务详情</h2>
+          </div>
+        `;
+
+        if (tasks.length === 0) {
+          html += `<div class="bg-white rounded-2xl p-6 text-center text-gray-500">当天没有安排学习任务。</div>`;
+        } else {
+          html += `<div class="space-y-3">`;
+          tasks.forEach(task => {
+            const subject = CONFIG.subjects[task.subject] || { name: task.subject, color: 'bg-gray-200', icon: '📌' };
+            html += `
+              <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded text-white ${subject.color}">${subject.name}</span>
+                  <span class="text-xs text-gray-500">${task.completed ? '✅ 已完成' : '⬜ 未完成'}</span>
+                </div>
+                <h3 class="font-semibold text-gray-900">${subject.icon} ${task.title}</h3>
+                ${task.description ? `<p class="text-sm text-gray-600 mt-1">${task.description}</p>` : ''}
+              </div>
+            `;
+          });
+          html += `</div>`;
+
+          if (checkIn.checkedIn) {
+            html += `<div class="mt-4 p-4 bg-green-50 rounded-xl text-green-800 text-sm">已打卡，获得 ${checkIn.pointsEarned} 积分。</div>`;
+          } else if (isToday) {
+            html += `<div class="mt-4 text-center"><button onclick="app.navigate('today')" class="bg-indigo-600 text-white py-2 px-6 rounded-full text-sm font-bold">去打卡</button></div>`;
+          }
+        }
+
+        return html;
+      }
+    };
+
+    // ===================== App Controller =====================
+    const app = {
+      currentView: 'today',
+      currentDetailDate: null,
+
+      init() {
+        State.init();
+        this.checkMissedDays();
+        this.navigate('today');
+        this.updateHeader();
+      },
+
+      navigate(view, data = null) {
+        this.currentView = view;
+        if (data) this.currentDetailDate = data;
+
+        // Update nav
+        document.querySelectorAll('nav button').forEach(btn => {
+          btn.className = 'flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent';
+        });
+        const activeBtn = document.getElementById(`nav-${view === 'dayDetail' ? 'calendar' : view}`);
+        if (activeBtn) activeBtn.className = 'flex-1 py-3 text-sm font-medium text-indigo-600 border-b-2 border-indigo-600';
+
+        // Render view
+        const main = document.getElementById('main-content');
+        if (view === 'today') main.innerHTML = Views.today();
+        else if (view === 'calendar') main.innerHTML = Views.calendar();
+        else if (view === 'dashboard') main.innerHTML = Views.dashboard();
+        else if (view === 'plan') main.innerHTML = Views.plan();
+        else if (view === 'dayDetail') main.innerHTML = Views.dayDetail(this.currentDetailDate);
+
+        window.scrollTo(0, 0);
+      },
+
+      updateHeader() {
+        const today = DateUtil.today();
+        const daysLeft = Math.max(0, DateUtil.daysBetween(today, CONFIG.examDate));
+        document.getElementById('days-left').textContent = daysLeft;
+        document.getElementById('total-points').textContent = State.data.totalPoints;
+      },
+
+      toggleTask(id) {
+        State.toggleTask(id);
+        this.updateHeader();
+        if (this.currentView === 'today') this.navigate('today');
+        else if (this.currentView === 'dayDetail') this.navigate('dayDetail', this.currentDetailDate);
+      },
+
+      checkIn() {
+        const today = DateUtil.today();
+        const result = State.checkIn(today);
+        if (result) {
+          this.updateHeader();
+          this.navigate('today');
+          this.confetti();
+          setTimeout(() => alert(`🎉 打卡成功！获得 ${result.points} 积分，连续 ${result.streak} 天！`), 100);
+        }
+      },
+
+      showDayDetail(date) {
+        this.navigate('dayDetail', date);
+      },
+
+      checkMissedDays() {
+        const missed = State.detectMissedDays();
+        if (missed.length > 0) {
+          setTimeout(() => {
+            if (confirm(`检测到 ${missed.length} 天未打卡（${missed.join(', ')}）。是否重新安排后续计划？`)) {
+              this.reschedule();
+            }
+          }, 500);
+        }
+      },
+
+      reschedule() {
+        const today = DateUtil.today();
+        const tomorrow = DateUtil.format(DateUtil.addDays(DateUtil.parse(today), 1));
+        const result = Rescheduler.reschedule(tomorrow);
+        if (result.warning) {
+          alert(`⚠️ 已重新安排，但仍有 ${result.remaining} 个任务无法在考前完成。建议增加每日学习时长或精简任务。`);
+        } else {
+          alert(`✅ 已重新安排后续计划，共调整 ${result.tasksMoved} 个任务。`);
+        }
+        this.updateHeader();
+        this.navigate('today');
+      },
+
+      resetData() {
+        if (confirm('确定要重置所有数据吗？打卡记录和积分将全部清空。')) {
+          State.reset();
+          this.updateHeader();
+          this.navigate('today');
+        }
+      },
+
+      confetti() {
+        const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a', '#ff0844'];
+        for (let i = 0; i < 30; i++) {
+          const el = document.createElement('div');
+          el.className = 'confetti';
+          el.style.left = Math.random() * 100 + 'vw';
+          el.style.background = colors[Math.floor(Math.random() * colors.length)];
+          el.style.animationDuration = (Math.random() * 2 + 2) + 's';
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 4000);
+        }
+      }
+    };
+
+    // Register service worker for PWA / offline support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    }
+
+    // Start the app
+    document.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
+</body>
+</html>
