@@ -49,7 +49,7 @@
       <div class="px-4 py-4 flex items-center justify-between">
         <div>
           <h1 class="text-xl font-bold text-gray-900">雅思7分冲刺计划</h1>
-          <p class="text-xs text-gray-500 mt-0.5">目标：8月29日 · 总分7.0</p>
+          <p class="text-xs text-gray-500 mt-0.5">目标：8月28日 · 总分7.0</p>
         </div>
         <div class="flex items-center gap-3">
           <div class="text-right">
@@ -80,10 +80,10 @@
   <script>
     // ===================== Configuration =====================
     const CONFIG = {
-      startDate: '2026-07-05',
-      examDate: '2026-08-29',
-      dailyMinutes: 240,
-      weekendMinutes: 300,
+      startDate: '2026-07-10',
+      examDate: '2026-08-28',
+      dailyMinutes: 300,
+      weekendMinutes: 360,
       subjects: {
         listening: { name: '听力', color: 'subject-listening', icon: '🎧' },
         reading: { name: '阅读', color: 'subject-reading', icon: '📖' },
@@ -91,14 +91,16 @@
         speaking: { name: '口语', color: 'subject-speaking', icon: '🗣️' },
         vocabulary: { name: '词汇', color: 'subject-vocabulary', icon: '📝' },
         mock: { name: '模考', color: 'subject-mock', icon: '⏰' },
-        review: { name: '复习', color: 'subject-review', icon: '🔄' }
+        review: { name: '复习', color: 'subject-review', icon: '🔄' },
+        gym: { name: '健身', color: 'subject-review', icon: '💪' }
       },
       slots: [
-        { time: '08:30', label: '早读热身', end: '09:00' },
-        { time: '09:00', label: '深度学习A', end: '10:30' },
-        { time: '10:45', label: '深度学习B', end: '12:00' },
+        { time: '08:00', label: '早读热身', end: '08:30' },
+        { time: '08:30', label: '听力深度学习', end: '10:30' },
+        { time: '10:45', label: '阅读深度学习', end: '13:00' },
         { time: '14:00', label: '输出训练', end: '15:30' },
-        { time: '15:45', label: '口语/词汇', end: '16:30' }
+        { time: '15:45', label: '口语/词汇', end: '16:45' },
+        { time: '17:00', label: '语料库/订正', end: '18:30' }
       ]
     };
 
@@ -149,7 +151,7 @@
           const isExamDay = dateStr === CONFIG.examDate;
 
           if (isExamDay) {
-            tasks.push(this.createTask(dateStr, 'all', 'mock', '08:30', 30, '🎯 雅思考试日', '保持自信，发挥出最佳水平！记得带身份证/护照、准考证、铅笔、橡皮。'));
+            tasks.push(this.createTask(dateStr, 'all', 'mock', '08:00', 30, '🎯 雅思考试日', '保持自信，发挥出最佳水平！记得带身份证/护照、准考证、铅笔、橡皮。'));
           } else {
             const dayTasks = this.getDayTasks(week, dayOfWeek, dayIndex, dateStr);
             tasks.push(...dayTasks);
@@ -173,246 +175,155 @@
       },
 
       getDayTasks(week, dayOfWeek, dayIndex, dateStr) {
+        const date = DateUtil.parse(dateStr);
+        const start = DateUtil.parse(CONFIG.startDate);
+        const courseEnd = DateUtil.addDays(start, 3); // 2026-07-13
+        const sprintStart = DateUtil.parse('2026-08-25');
+        const sprintEnd = DateUtil.parse('2026-08-27');
+
+        if (date <= courseEnd) {
+          return this.getCourseDayTasks(dateStr, date);
+        }
+        if (date >= sprintStart && date <= sprintEnd) {
+          return this.getSprintDayTasks(dateStr, date);
+        }
+        return this.getPracticeDayTasks(dateStr, dayOfWeek, dayIndex);
+      },
+
+      getCourseDayTasks(dateStr, date) {
         const tasks = [];
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const d = date.getDate();
+        const m = date.getMonth() + 1;
 
-        // 早读热身：每天固定
-        tasks.push(this.createTask(dateStr, 'morning', 'vocabulary', '08:30', 30,
-          this.getVocabTask(week),
-          this.getVocabDesc(week)));
-
-        if (week === 8) {
-          // 考前一周轻量复习
-          return this.getFinalWeekTasks(dateStr, week, dayOfWeek, tasks);
+        if (m === 7 && d === 10) {
+          tasks.push(this.createTask(dateStr, 'morning', 'vocabulary', '08:00', 30, '词汇入门：538考点词+场景词', '快速浏览听力场景词和阅读538考点词，建立基础词库。'));
+          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '08:30', 120, '何琼听力技巧课1-4', '系统学习雅思听力题型技巧、审题方法和同替识别。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'writing', '10:45', 135, 'Simon写作Task 2结构课', '学习四段式结构：开头段+主体两段+结尾段；整理观点类/讨论类框架。'));
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 90, 'Simon Task 2结构实践', '根据课程整理个人写作框架，列出常用连接词和句式。'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '15:45', 60, '口语当季题库浏览', '浏览本季Part1/2/3题库，标记熟悉和不熟悉的话题。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'review', '17:00', 90, '今日课程笔记整理', '整理听力技巧笔记和写作结构模板，方便后续复习。'));
+        } else if (m === 7 && d === 11) {
+          tasks.push(this.createTask(dateStr, 'morning', 'vocabulary', '08:00', 30, '昨日错题词复习', '复习昨日课程中遇到的生词、同替和场景词。'));
+          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '08:30', 120, '何琼听力技巧课5-6', '继续学习听力技巧，重点突破填空题和选择题陷阱。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 135, '刘洪波平行阅读法', '学习“平行阅读法”：一次性处理多题型，提高阅读速度和定位准确度。'));
+          tasks.push(this.createTask(dateStr, 'output', 'vocabulary', '14:00', 90, '顾家北词伙积累', '整理写作和口语高频词伙，建立个人词伙库。'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '15:45', 60, '口语话题规划', '用“五点法”为Part 2话题搭建个人素材框架，避免死记硬背。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'review', '17:00', 90, '同义替换整理', '整理听力和阅读中常见同替，建立个人同替本。'));
+        } else if (m === 7 && d === 12) {
+          tasks.push(this.createTask(dateStr, 'morning', 'vocabulary', '08:00', 30, '刘洪波538关键词早读', '朗读记忆538阅读考点词，强化同替敏感度。'));
+          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '08:30', 120, '何琼听力技巧课7-8', '完成听力技巧课，重点攻克地图题和匹配题。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'writing', '10:45', 135, 'Simon Task 1图表课', '学习线图/柱状图/饼图/表格/流程图描述方法，整理常用句型。'));
+          tasks.push(this.createTask(dateStr, 'output', 'vocabulary', '14:00', 90, '538关键词深度记忆', '结合例句记忆538考点词，理解其在真题中的同替用法。'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '15:45', 60, '口语Part 1练习', '用个人素材回答，避免死记硬背。Part1 3个话题 + Part2 1个卡片，录音回听'));
+          tasks.push(this.createTask(dateStr, 'evening', 'review', '17:00', 90, '技巧课复习', '复习何琼听力和Simon写作要点，整理易错点清单。'));
+        } else if (m === 7 && d === 13) {
+          tasks.push(this.createTask(dateStr, 'morning', 'review', '08:00', 30, '复习所有课程笔记', '快速过一遍7.10-7.12所有课程笔记和技巧要点。'));
+          tasks.push(this.createTask(dateStr, 'peakA', 'review', '08:30', 120, '全部课程技巧复盘', '系统复盘听力、阅读、写作方法论，形成个人解题checklist。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 135, '剑桥7 Test 1阅读练习（不限时）', '用刚学的平行阅读法不限时完成一套阅读，重点理解定位与同替逻辑。'));
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 90, '杜仕明/顾家北写作逻辑', '学习Task 2论证逻辑（ABC法），整理观点展开方式。'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '15:45', 60, '口语Part 2万能素材搭建', '准备3-5个万能故事素材，覆盖人物/地点/事件/物品类话题。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'review', '17:00', 90, '错题和笔记整理', '整理阅读练习中的错题，完善个人词库和同替本。'));
         }
-
-        if (isWeekend && (week === 4 || week === 5 || week === 6 || week === 7)) {
-          // 周末模考日
-          return this.getMockDayTasks(dateStr, week, dayOfWeek, tasks);
-        }
-
-        // 平日任务
-        tasks.push(...this.getMorningTasks(dateStr, week, dayOfWeek));
-        tasks.push(...this.getAfternoonTasks(dateStr, week, dayOfWeek));
         return tasks;
       },
 
-      getVocabTask(week) {
-        if (week <= 2) return '《词汇真经》新词+复习';
-        if (week <= 4) return '核心2000词第二轮复习';
-        if (week <= 6) return '真题同替+错词复习';
-        return '538考点词+高频词伙';
-      },
+      getSprintDayTasks(dateStr, date) {
+        const tasks = [];
+        const d = date.getDate();
 
-      getVocabDesc(week) {
-        if (week <= 2) return '每天2个主题，新词30个+复习前日错词。用艾宾浩斯复习表滚动记忆。';
-        if (week <= 4) return '重点复习听力场景词、阅读同义替换词、写作词伙。';
-        if (week <= 6) return '整理真题中遇到的生词和同替，建立个人词库。';
-        return '快速过538考点词和口语写作高频词伙。';
-      },
-
-      getMockDayTasks(dateStr, week, dayOfWeek, baseTasks) {
-        const cambridge = { 4: '剑13', 5: '剑14', 6: '剑16', 7: '剑17' };
-        const testNum = { 4: 'Test 1', 5: 'Test 1', 6: 'Test 1', 7: 'Test 2' }[week] || 'Test 1';
-        const book = cambridge[week] || '剑18';
-
-        baseTasks.push(this.createTask(dateStr, 'mock', 'mock', '09:00', 180,
-          `${book} ${testNum} 全科模考（纸笔流程）`,
-          `严格按考试时间：9:00-9:40听力（+10分钟誊写），9:50-10:50阅读，11:00-12:00写作。下午复盘。`));
-        baseTasks.push(this.createTask(dateStr, 'afternoon', 'listening', '14:00', 45,
-          '听力错题精听+同替整理',
-          '重听错题Section，写出原文和题干中的同义替换词。'));
-        baseTasks.push(this.createTask(dateStr, 'afternoon', 'reading', '15:00', 45,
-          '阅读错题精读+长难句分析',
-          '分析错题原因：定位错误？同替没识别？还是理解偏差？'));
-        baseTasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-          '口语Part 1快速过3个话题',
-          '用录音方式练习，控制在20-30秒/题。'));
-        return baseTasks;
-      },
-
-      getFinalWeekTasks(dateStr, week, dayOfWeek, baseTasks) {
-        const d = DateUtil.parse(dateStr).getDate();
-        if (d === 23) {
-          baseTasks.push(this.createTask(dateStr, 'mock', 'mock', '09:00', 180,
-            '剑18 Test 1 最后1次全科模考',
-            '保持考试手感，重点不是分数而是节奏和状态。'));
-          baseTasks.push(this.createTask(dateStr, 'afternoon', 'review', '14:00', 60, '模考错题复盘', '只看错题，不看新题。'));
-        } else if (d >= 24 && d <= 26) {
-          baseTasks.push(this.createTask(dateStr, 'morning', 'listening', '09:00', 45, '听力错题+同替回顾', '重听之前标记的难题，强化场景词。'));
-          baseTasks.push(this.createTask(dateStr, 'morning', 'reading', '10:00', 45, '阅读538考点词+错题', '保持定位敏感度，不做新长篇。'));
-          baseTasks.push(this.createTask(dateStr, 'afternoon', 'writing', '14:00', 45, '写作模板+词伙背诵', '默写个人专属开头、结尾、过渡句。'));
-          baseTasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30, '口语当季题库快速过', 'Part 1过3个话题，Part 2看2个卡片思路。'));
+        if (d === 25) {
+          tasks.push(this.createTask(dateStr, 'morning', 'speaking', '08:00', 30, '口语热身', '简单话题开口说，保持流利度，不做难题。'));
+          tasks.push(this.createTask(dateStr, 'mock', 'mock', '08:30', 180, '剑桥18 Test 3全科模考（3小时）', '严格按考试时间：8:30-9:10听力（+10分钟誊写），9:20-10:20阅读，10:30-11:30写作。模拟真实考试节奏。'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'listening', '14:00', 90, '模考听力错题复盘', '重听错题Section，写出原文和题干中的同义替换词，分析错因。'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'reading', '15:45', 60, '模考阅读错题精读', '分析错题原因：定位错误？同替没识别？还是理解偏差？精读答案句。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '17:00', 90, '口语热身+录音', '用个人素材回答，避免死记硬背。Part1 3个话题 + Part2 1个卡片，录音回听'));
+        } else if (d === 26) {
+          tasks.push(this.createTask(dateStr, 'morning', 'speaking', '08:00', 30, '口语当季话题快速过', '快速过3个Part 1话题和1个Part 2卡片，保持反应速度。'));
+          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '08:30', 120, '听力错题回顾', '重听之前标记的难题，强化场景词和同替，不再做新题。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 135, '阅读错题回顾', '复习538考点词和错题，保持定位敏感度，不做新长篇。'));
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 90, '写作模板默写', '默写个人专属开头、结尾、过渡句和高频词伙，确保考试不卡壳。'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '15:45', 60, '口语话题快速过', '用个人素材回答，避免死记硬背。Part1 3个话题 + Part2 1个卡片，录音回听'));
+          tasks.push(this.createTask(dateStr, 'evening', 'review', '17:00', 90, '考试物品/证件准备', '身份证、准考证、2B铅笔、橡皮、耳机电池（如适用）。确认交通和考点。'));
         } else if (d === 27) {
-          baseTasks.push(this.createTask(dateStr, 'morning', 'review', '09:00', 60, '考前准备：证件/文具/考点确认', '身份证、准考证、2B铅笔、橡皮、耳机电池（如适用）。确认交通和考点。'));
-          baseTasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '14:00', 30, '口语Part 1热身', '保持开口感觉，不做难题。'));
-          baseTasks.push(this.createTask(dateStr, 'evening', 'vocabulary', '15:45', 20, '早睡准备', '22:30前入睡，不要熬夜。'));
-        } else if (d === 28) {
-          baseTasks.push(this.createTask(dateStr, 'morning', 'speaking', '09:00', 30, '口语Part 1热身', '简单话题保持流利度。'));
-          baseTasks.push(this.createTask(dateStr, 'morning', 'writing', '09:45', 30, '写作模板默写', '强化个人模板，避免考试卡壳。'));
-          baseTasks.push(this.createTask(dateStr, 'afternoon', 'review', '14:00', 30, '轻松复习+整理心态', '不做新题，听听英文播客或看看之前整理的高频词伙。'));
-          baseTasks.push(this.createTask(dateStr, 'evening', 'vocabulary', '15:45', 15, '早睡', '21:30前上床，保证8小时睡眠。'));
-        }
-        return baseTasks;
-      },
-
-      getMorningTasks(dateStr, week, dayOfWeek) {
-        const tasks = [];
-        const dayOfWeekMod = dayOfWeek === 0 ? 7 : dayOfWeek;
-
-        if (week === 1) {
-          // 第1周：方法论输入
-          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-            '何琼听力技巧课（每天1节）+ 王陆语料库听写',
-            'B站搜索“何琼听力”，学习题型技巧；语料库重点第3/4/5章。'));
-          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-            '刘洪波平行阅读法/538考点词',
-            'B站“刘洪波 阅读真经”，理解定位与同替逻辑。'));
-        } else if (week === 2) {
-          if (dayOfWeekMod % 2 === 1) {
-            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-              `剑7 Test ${Math.ceil(dayOfWeekMod/2)} 听力完整套题 + 错题精听`,
-              '限时30分钟完成，再用30分钟精听错题Section，最后30分钟整理同替。'));
-            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-              `剑9 Test ${Math.ceil(dayOfWeekMod/2)} 阅读完整套题`,
-              '限时60分钟，重点攻克T/F/NG和Heading题。'));
-          } else {
-            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-              '听力精听：剑5/剑6 Section 3/4 + 王陆语料库',
-              '逐句听写，标记连读、弱读、同替。'));
-            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-              '阅读题型专项：T/F/NG + Heading + Matching',
-              '总结每种题型的解题步骤和常见陷阱。'));
-          }
-        } else if (week === 3) {
-          const testNum = Math.ceil(dayOfWeekMod / 1.5);
-          if (testNum <= 4) {
-            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-              `剑11 Test ${testNum} 听力限时模考 + 精听`,
-              '严格30分钟完成，Section 3/4重点精听。'));
-            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-              `剑11 Test ${testNum} 阅读限时模考`,
-              '限时60分钟，训练定位+同替速度。'));
-          } else {
-            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-              '听力错题分类复盘 + 地图题/多选题专项',
-              '统计本周错题题型，集中突破。'));
-            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-              '阅读长难句精读 + 段落结构分析',
-              '每篇文章精读2个长难句，理解主谓宾和修饰关系。'));
-          }
-        } else if (week === 5) {
-          const testNum = Math.min(Math.ceil(dayOfWeekMod / 1.2), 4);
-          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-            `剑14 Test ${testNum} 听力限时 + 错题整理`,
-            '保持做题节奏，整理高频场景词（租房、学术、旅游）。'));
-          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-            `剑14 Test ${testNum} 阅读限时 + 精读`,
-            '限时60分钟，每篇做完后精读2个长难句。'));
-        } else if (week === 6 || week === 7) {
-          // 第6、7周平日：保持手感+查漏补缺
-          const books = { 6: '剑16', 7: '剑17' };
-          const testNum = Math.min(dayOfWeekMod, 4);
-          if (dayOfWeekMod <= 4) {
-            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-              `${books[week]} Test ${testNum} 听力限时模考`,
-              '控制时间，模拟真实考试状态。'));
-            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-              `${books[week]} Test ${testNum} 阅读限时模考`,
-              '限时60分钟，做完后立即复盘错题。'));
-          } else {
-            tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-              '听力错题同替回顾 + 语料库错词',
-              '不再做新题，重点回顾错题和易错词。'));
-            tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-              '阅读538考点词 + 错题复盘',
-              '复习高频考点词，保持阅读敏感度。'));
-          }
-        } else {
-          tasks.push(this.createTask(dateStr, 'peakA', 'listening', '09:00', 60,
-            '听力完整套题 / 精听 / 语料库',
-            '根据当天状态选择：做题或精听。'));
-          tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 60,
-            '阅读完整套题 / 精读',
-            '限时训练或精读分析。'));
+          tasks.push(this.createTask(dateStr, 'morning', 'speaking', '08:00', 30, '口语热身', '简单话题保持流利度，不做难题。'));
+          tasks.push(this.createTask(dateStr, 'peakA', 'writing', '08:30', 120, '写作模板回顾', '快速回顾Task 1/2模板和常用词伙，强化肌肉记忆。'));
+          tasks.push(this.createTask(dateStr, 'peakB', 'review', '10:45', 135, '轻量复习：错词+同替', '看看之前整理的高频词伙和同替，不做新题。'));
+          tasks.push(this.createTask(dateStr, 'output', 'speaking', '14:00', 90, '口语热身+录音', '用个人素材回答，避免死记硬背。Part1 3个话题 + Part2 1个卡片，录音回听'));
+          tasks.push(this.createTask(dateStr, 'afternoon', 'review', '15:45', 60, '轻松复习+整理心态', '听听英文播客或看看整理的高频词伙，保持放松。'));
+          tasks.push(this.createTask(dateStr, 'evening', 'vocabulary', '17:00', 90, '早睡准备', '21:30前上床，保证8小时睡眠，调整生物钟。'));
         }
         return tasks;
       },
 
-      getAfternoonTasks(dateStr, week, dayOfWeek) {
+      getPracticeDayTasks(dateStr, dayOfWeek, dayIndex) {
         const tasks = [];
-        const dayOfWeekMod = dayOfWeek === 0 ? 7 : dayOfWeek;
+        const practiceDayIndex = DateUtil.daysBetween('2026-07-14', dateStr);
+        const isGymDay = practiceDayIndex % 2 === 0;
+        const listeningBook = this.getCambridgeBook(practiceDayIndex);
+        const listeningTest = this.getCambridgeTest(practiceDayIndex);
+        const readingBook = this.getCambridgeBook(practiceDayIndex + 24);
+        const readingTest = this.getCambridgeTest(practiceDayIndex + 24);
+        const speakingTopic = this.getSpeakingTopic(practiceDayIndex);
+        const isBigEssay = practiceDayIndex % 2 === 0;
 
-        if (week === 1) {
-          if (dayOfWeekMod % 2 === 1) {
-            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-              'Simon Task 2 结构课 + 观点类作文练习',
-              'B站“Simon 雅思写作”，学习四段式结构；写一篇观点类Task 2（不限时）。'));
-          } else {
-            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-              'Simon Task 2 讨论类作文练习',
-              '学习平衡式结构，写一篇讨论类Task 2（不限时）。'));
-          }
-          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-            '口语Part 1/2题库整理 + 录音5分钟',
-            '整理当季题库，用“五点法”准备Part 2话题。'));
-        } else if (week === 2) {
-          if (dayOfWeekMod <= 3) {
-            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-              'Simon Task 1 图表课 + 图表作文1篇',
-              '学习线图/柱状图/饼图/表格描述方法，注意趋势和比较。'));
-          } else {
-            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-              'Task 2 限时40分钟 + AI/工具批改',
-              '用Grammarly或AI检查语法错误，积累个人易错点。'));
-          }
-          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-            `Part 2 卡片准备（累计${20 + dayOfWeekMod * 3}个）`,
-            '每个卡片准备1分钟说满2分钟的内容，录音回听。'));
-        } else if (week === 3) {
-          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-            'Task 2 限时40分钟 + Task 1 限时20分钟',
-            '严格计时，模拟考试压力；写完后自我批改。'));
-          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-            'Part 2 + Part 3 模拟录音',
-            '每两天完成1次完整Part 2+3模拟，回听纠正语法错误。'));
-        } else if (week === 4) {
-          const focus = ['多选+配对', '地图题', 'Heading+Matching', '长难句'][dayOfWeekMod % 4];
-          if (dayOfWeekMod <= 4) {
-            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-              'Simon高分范文仿写3篇（本周内完成）',
-              '选择教育/科技/环境话题范文，模仿结构和词伙。'));
-          } else {
-            tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-              '写作Task 2限时 + 词伙背诵',
-              '背诵10组高频词伙，并在作文中强制使用。'));
-          }
-          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-            '跟读杨帅99句 + Part 3思路训练',
-            '纠正发音和连读；Part 3每天5题，练习观点+例子+反方。'));
-        } else if (week === 5) {
-          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-            '写作Task 1/2限时训练 + 范文分析',
-            '本周完成2篇Task 1 + 3篇Task 2；找批改或AI精改。'));
-          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-            '口语完整模拟 / Part 1快速过',
-            '每2天完成1次完整口语模拟（Part1+2+3）。'));
-        } else if (week === 6 || week === 7) {
-          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-            '写作限时训练 + 个人模板整理',
-            '限时完成Task 2；整理个人专属开头、结尾、过渡句。'));
-          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-            '口语当季题库全部过一遍',
-            '重点练最近2季新题，每天1次完整模拟。'));
+        // 08:00-08:30 早读热身
+        tasks.push(this.createTask(dateStr, 'morning', 'speaking', '08:00', 30, '口语朗读+昨日错词复习', '跟读口语素材5分钟，复习昨日听力和阅读错题词。'));
+
+        // 08:30-10:30 听力深度学习
+        tasks.push(this.createTask(dateStr, 'peakA', 'listening', '08:30', 120, `${listeningBook} ${listeningTest} 听力完整套题`, '限时30分钟做题；60分钟精听错题Section；整理同义替换+背诵；答案句翻译理解读10遍'));
+
+        // 10:45-13:00 阅读深度学习
+        tasks.push(this.createTask(dateStr, 'peakB', 'reading', '10:45', 135, `${readingBook} ${readingTest} 阅读完整套题`, '限时60分钟做题；45分钟改正+精读答案句；30分钟整理同义替换+背诵'));
+
+        // 14:00-15:30 输出训练（写作）
+        if (isGymDay) {
+          const title = isBigEssay ? '写作大作文（限时45分钟）' : '写作小作文（限时20分钟）';
+          const desc = isBigEssay
+            ? '45分钟完成Task 2；对照Simon/顾家北范文整理素材；背5个好词好句好搭配'
+            : '20分钟完成Task 1；对照范文整理图表描述素材；背5个好词好句';
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 45, title, desc));
         } else {
-          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 60,
-            '写作练习/网课学习',
-            '根据当天计划完成写作任务。'));
-          tasks.push(this.createTask(dateStr, 'evening', 'speaking', '15:45', 30,
-            '口语练习',
-            '录音模拟或跟读练习。'));
+          const title = isBigEssay ? '写作大作文+范文分析' : '写作小作文+范文分析';
+          const desc = isBigEssay
+            ? '40分钟完成Task 2；对照Simon/顾家北范文整理素材；背5个好词好句好搭配'
+            : '20分钟完成Task 1；对照范文整理图表描述素材；背5个好词好句';
+          tasks.push(this.createTask(dateStr, 'output', 'writing', '14:00', 90, title, desc));
         }
+
+        if (isGymDay) {
+          // 15:45-17:45 健身
+          tasks.push(this.createTask(dateStr, 'gym', 'gym', '15:45', 120, '健身', '运动放松，保持良好身体状态。'));
+          // 18:00-19:00 口语
+          tasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '18:00', 60, `口语素材练习：${speakingTopic}`, '用个人素材回答，避免死记硬背。Part1 3个话题 + Part2 1个卡片，录音回听'));
+          // 19:15-20:00 语料库（45分钟）
+          tasks.push(this.createTask(dateStr, 'evening', 'vocabulary', '19:15', 45, '王陆语料库听写+订正', '王陆语料库第3/4/5/11章重点；30分钟听写+15分钟订正'));
+        } else {
+          // 15:45-16:45 口语
+          tasks.push(this.createTask(dateStr, 'afternoon', 'speaking', '15:45', 60, `口语素材练习：${speakingTopic}`, '用个人素材回答，避免死记硬背。Part1 3个话题 + Part2 1个卡片，录音回听'));
+          // 17:00-18:30 语料库（90分钟）
+          tasks.push(this.createTask(dateStr, 'evening', 'vocabulary', '17:00', 90, '王陆语料库听写+订正', '王陆语料库第3/4/5/11章重点；60分钟听写+30分钟订正'));
+        }
+
         return tasks;
+      },
+
+      getCambridgeBook(dayOffset) {
+        const books = [];
+        for (let i = 7; i <= 18; i++) {
+          for (let j = 0; j < 4; j++) {
+            books.push(`剑${i}`);
+          }
+        }
+        return books[dayOffset % 48];
+      },
+
+      getCambridgeTest(dayOffset) {
+        return ['Test 1', 'Test 2', 'Test 3', 'Test 4'][dayOffset % 4];
+      },
+
+      getSpeakingTopic(dayOffset) {
+        const topics = ['人物类', '地点类', '事件类', '物品类', '活动类', '经历类', '未来计划'];
+        return topics[dayOffset % 7];
       }
     };
 
@@ -924,43 +835,51 @@
       plan() {
         return `
           <div class="mb-6">
-            <h2 class="text-xl font-bold text-gray-900">8周备考计划概览</h2>
-            <p class="text-sm text-gray-600">按阶段推进，听力和阅读冲高分拉总分。</p>
+            <h2 class="text-xl font-bold text-gray-900">50天雅思7分备考计划</h2>
+            <p class="text-sm text-gray-600">7.10-7.13网课输入，7.14-8.24真题魔鬼训练，8.25-8.27冲刺调整。</p>
           </div>
 
           <div class="space-y-4">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
               <h3 class="font-bold text-indigo-700 mb-2">🧠 脑波时间分配</h3>
               <ul class="text-sm text-gray-600 space-y-1">
-                <li><strong>08:30-09:00</strong>：θ→α波过渡，适合口语跟读+词汇记忆</li>
-                <li><strong>09:00-12:00</strong>：β波峰值，安排听力/阅读高难度输入任务</li>
-                <li><strong>14:00-16:30</strong>：α波为主，安排写作/口语输出训练</li>
-                <li><strong>晚间</strong>：仅轻量复习，避免新内容</li>
+                <li><strong>08:00-08:30</strong>：θ→α波过渡，口语跟读+错词复习（热身记忆）</li>
+                <li><strong>08:30-13:00</strong>：β波峰值，听力+阅读真题（最高认知负荷）</li>
+                <li><strong>14:00-15:30</strong>：α波为主，写作输出训练</li>
+                <li><strong>15:45-18:30</strong>：口语+语料库重复性训练</li>
+                <li><strong>19:00-23:00</strong>：做实验，不学习</li>
+                <li><strong>23:00</strong>：睡觉，保证8小时睡眠</li>
               </ul>
             </div>
 
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <h3 class="font-bold text-indigo-700 mb-2">📅 阶段重点</h3>
+              <h3 class="font-bold text-indigo-700 mb-2">📅 三阶段安排</h3>
               <ul class="text-sm text-gray-600 space-y-2">
-                <li><strong>第1周（7/5-7/11）</strong>：诊断+方法论输入。何琼听力、刘洪波阅读、Simon写作。</li>
-                <li><strong>第2周（7/12-7/18）</strong>：基础巩固+题型突破。隔天听力套题，阅读T/F/NG和Heading。</li>
-                <li><strong>第3周（7/19-7/25）</strong>：提速+限时训练。剑11-12完整套题限时。</li>
-                <li><strong>第4周（7/26-8/1）</strong>：弱项诊断+专项突破。剑13模考，针对弱项集中训练。</li>
-                <li><strong>第5周（8/2-8/8）</strong>：套题强化+技巧融合。剑14-15，写作每周2篇Task1+3篇Task2。</li>
-                <li><strong>第6周（8/9-8/15）</strong>：全真模拟+节奏稳定。剑16模考2次，调整生物钟。</li>
-                <li><strong>第7周（8/16-8/22）</strong>：冲刺+查漏补缺。剑17-18模考，错题复盘。</li>
-                <li><strong>第8周（8/23-8/28）</strong>：考前调整。轻量复习，准备证件，调整作息。</li>
+                <li><strong>阶段一（7/10-7/13）</strong>：网课密集。何琼听力、刘洪波阅读、Simon+顾家北写作。</li>
+                <li><strong>阶段二（7/14-8/24）</strong>：每天1套听力+1套阅读+1篇作文+口语+语料库。</li>
+                <li><strong>阶段三（8/25-8/27）</strong>：模考+错题复盘+调整状态。</li>
+                <li><strong>8/28</strong>：考试日。</li>
               </ul>
             </div>
 
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-              <h3 class="font-bold text-indigo-700 mb-2">📺 B站推荐课程</h3>
+              <h3 class="font-bold text-indigo-700 mb-2">📺 推荐课程/资料</h3>
               <div class="grid grid-cols-1 gap-3 text-sm">
-                <div class="p-3 bg-purple-50 rounded-lg"><strong>听力</strong>：何琼听力技巧课、王陆语料库</div>
-                <div class="p-3 bg-pink-50 rounded-lg"><strong>阅读</strong>：刘洪波《雅思真经第一课》、538考点词</div>
-                <div class="p-3 bg-blue-50 rounded-lg"><strong>写作</strong>：Simon写作课、顾家北ABC写作法</div>
-                <div class="p-3 bg-green-50 rounded-lg"><strong>口语</strong>：杨帅99句、Keith雅思口语</div>
+                <div class="p-3 bg-purple-50 rounded-lg"><strong>听力</strong>：何琼听力技巧课（B站）+ 王陆语料库</div>
+                <div class="p-3 bg-pink-50 rounded-lg"><strong>阅读</strong>：刘洪波平行阅读法 + 538考点词</div>
+                <div class="p-3 bg-blue-50 rounded-lg"><strong>写作</strong>：Simon（结构）+ 顾家北（词伙/论证）+ 杜仕明（逻辑）</div>
+                <div class="p-3 bg-green-50 rounded-lg"><strong>口语</strong>：当季题库 + 个人素材库 + 录音练习（不建议死记硬背）</div>
               </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <h3 class="font-bold text-indigo-700 mb-2">⚠️ 注意事项</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li>每天约8小时学习强度极高，必须保证睡眠和营养</li>
+                <li>每两天一次2小时健身，健身日任务适当减量</li>
+                <li>口语用个人素材串题，避免背诵痕迹被考官识别</li>
+                <li>考前3天不做新题，只看错题和模板</li>
+              </ul>
             </div>
           </div>
         `;
