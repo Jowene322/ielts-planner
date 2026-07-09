@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="theme-color" content="#4f46e5">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -49,7 +52,7 @@
       <div class="px-4 py-4 flex items-center justify-between">
         <div>
           <h1 class="text-xl font-bold text-gray-900">雅思7分冲刺计划</h1>
-          <p class="text-xs text-gray-500 mt-0.5">目标：8月28日 · 总分7.0</p>
+          <p class="text-xs text-gray-500 mt-0.5">目标：8月28日 · 总分7.0 · v2.0</p>
         </div>
         <div class="flex items-center gap-3">
           <div class="text-right">
@@ -819,6 +822,9 @@
           <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
             <h3 class="font-bold text-gray-900 mb-3">工具</h3>
             <div class="space-y-2">
+              <button onclick="app.forceRefresh()" class="w-full py-2 px-4 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors text-left">
+                🧹 强制刷新缓存（遇到旧版界面时点这个）
+              </button>
               <button onclick="app.reschedule()" class="w-full py-2 px-4 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors text-left">
                 🔄 重新安排后续计划（缺勤后使用）
               </button>
@@ -1019,6 +1025,21 @@
           State.reset();
           this.updateHeader();
           this.navigate('today');
+        }
+      },
+
+      forceRefresh() {
+        if (confirm('强制刷新会清除本地缓存并重新加载最新版本，确定继续？')) {
+          // Unregister service workers
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+              registrations.forEach(reg => reg.unregister());
+            });
+          }
+          // Clear localStorage
+          localStorage.clear();
+          // Reload from server with cache busting
+          window.location.href = window.location.href.split('?')[0] + '?_=' + Date.now();
         }
       },
 
