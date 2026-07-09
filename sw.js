@@ -1,8 +1,11 @@
-const CACHE_NAME = 'ielts-planner-v1';
+const CACHE_NAME = 'ielts-planner-v2';
 const urlsToCache = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon-192x192.png',
+  './icon-512x512.png',
+  './favicon.ico'
 ];
 
 self.addEventListener('install', event => {
@@ -15,15 +18,34 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // For navigation requests (the main page), always try network first
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Update cache with latest version
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request).then(response => {
+            return response || caches.match('./index.html');
+          });
+        })
+    );
+    return;
+  }
+
+  // For other resources, use cache-first with network fallback
   event.respondWith(
     caches.match(event.request)
       .then(response => {
         if (response) return response;
         return fetch(event.request).catch(() => {
-          // If offline and requesting the app, return cached index.html
-          if (event.request.mode === 'navigate') {
-            return caches.match('./index.html');
-          }
+          return caches.match('./index.html');
         });
       })
   );
